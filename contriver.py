@@ -67,7 +67,7 @@ class QuestionReferenceDensity_forPredict(torch.nn.Module):
     
 class QuestionReferenceDensityScorer:
     def __init__(self, question_encoder_path, reference_encoder_path, device=None) -> None:
-        self.tokenizer = AutoTokenizer.from_pretrained('facebook/contriever-msmarco')
+        self.tokenizer = AutoTokenizer.from_pretrained(question_encoder_path)
         self.model = QuestionReferenceDensity_forPredict(question_encoder_path, reference_encoder_path)
         
         self.device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu") if not device else device
@@ -108,15 +108,14 @@ class QuestionReferenceDensityScorer:
         return scores.topk(min(k, len(scores)))
 
 def test_contriever_scorer():
-    # sentences = ["中国是世界文明古国，也是人类的发源地之一。中国境内最早的人类是距今约 170 万年的_______。",
-    #              "A. 蓝田人", "B. 元谋人", "C. 山顶洞人,", "D. 北京人"]
-    sentences = ["今天天气如何？", "今天天气很好", "今天在下雨", "天气有点热", "我吃饱了"]
-
+    sentences = open('retrieval_data.txt').read().split('\n')
     scorer = QuestionReferenceDensityScorer('ckpt/question_encoder', 'ckpt/reference_encoder')
-    print(scorer.score_documents_on_query(sentences[0], sentences[1:]))
-    target_idx = scorer.select_topk(sentences[0], sentences[1:], 3).indices
-    result = [sentences[idx + 1] for idx in target_idx]
-    print(result)
+    while True:
+        query = input('Input your query >>>')
+        print(scorer.score_documents_on_query(query, sentences))
+        target_idx = scorer.select_topk(query, sentences, 3).indices
+        result = [sentences[idx] for idx in target_idx]
+        print(result)
 
 if __name__ == "__main__":
     test_contriever_scorer()
